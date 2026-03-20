@@ -1,0 +1,33 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:authdbtest;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+auth:
+  jwt:
+    issuer: https://auth.test
+    key-id: test-v1
+    access-token-expiry-minutes: 15
+    refresh-token-expiry-days: 30
+    keystore:
+      mode: generate
+      path: classpath:auth-keystore.p12
+      password: changeit
+      alias: auth-jwt
+  jwks:
+    cache-ttl-minutes: 1
+    providers:
+      google:
+        jwks-uri: http://localhost:9999/mock-jwks
+        issuer: https://accounts.google.com
+        audience: local-google-client-id
+  rate-limit:
+    login-per-minute: 1000
+    password-reset-per-minute: 1000
+    social-login-per-minute: 1000
