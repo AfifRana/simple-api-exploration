@@ -100,6 +100,7 @@ All endpoints are JSON over HTTPS. Use `Authorization: Bearer <access_token>` fo
 - Limit login attempts and introduce progressive delays / temporary account lockouts.
 - Use short-lived access tokens and minimal scopes.
 - Protect endpoints with rate limiting and IP/device throttling.
+- Avoid using deprecated libraries
 
 ## Scalability & Persistence
 
