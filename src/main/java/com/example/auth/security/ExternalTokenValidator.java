@@ -30,7 +30,7 @@ public class ExternalTokenValidator {
         String kid = extractKid(idToken);
         PublicKey publicKey = externalJwksService.findKey(provider.getJwksUri(), kid);
         Claims claims = Jwts.parser()
-                .verifyWith((java.security.PublicKey) publicKey)
+                .verifyWith(publicKey)
                 .requireIssuer(provider.getIssuer())
                 .build()
                 .parseSignedClaims(idToken)

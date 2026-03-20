@@ -58,20 +58,23 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private Bucket newLoginBucket(String ignored) {
+        long loginPerMinute = authProperties.getRateLimit().getLoginPerMinute();
         return Bucket.builder()
-                .addLimit(Bandwidth.classic(authProperties.getRateLimit().getLoginPerMinute(), Refill.greedy(authProperties.getRateLimit().getLoginPerMinute(), Duration.ofMinutes(1))))
+                .addLimit(Bandwidth.classic(loginPerMinute, Refill.greedy(loginPerMinute, Duration.ofMinutes(1))))
                 .build();
     }
 
     private Bucket newResetBucket(String ignored) {
+        long passwordResetPerMinute = authProperties.getRateLimit().getPasswordResetPerMinute();
         return Bucket.builder()
-                .addLimit(Bandwidth.classic(authProperties.getRateLimit().getPasswordResetPerMinute(), Refill.greedy(authProperties.getRateLimit().getPasswordResetPerMinute(), Duration.ofMinutes(1))))
+                .addLimit(Bandwidth.classic(passwordResetPerMinute, Refill.greedy(passwordResetPerMinute, Duration.ofMinutes(1))))
                 .build();
     }
 
     private Bucket newSocialBucket(String ignored) {
+        long socialLoginPerMinute = authProperties.getRateLimit().getSocialLoginPerMinute();
         return Bucket.builder()
-                .addLimit(Bandwidth.classic(authProperties.getRateLimit().getSocialLoginPerMinute(), Refill.greedy(authProperties.getRateLimit().getSocialLoginPerMinute(), Duration.ofMinutes(1))))
+                .addLimit(Bandwidth.classic(socialLoginPerMinute, Refill.greedy(socialLoginPerMinute, Duration.ofMinutes(1))))
                 .build();
     }
 }
