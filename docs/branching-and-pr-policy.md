@@ -44,9 +44,19 @@ This policy keeps `main` stable while allowing iterative feature delivery throug
 - Performance budgets and regression evidence must be provided where relevant.
 
 ## Suggested Naming Conventions
-- Features: `feat/001-auth-login`
-- Fixes: `fix/017-token-refresh-bug`
-- Hotfixes: `hotfix/critical-login-outage`
+- Features: `feat/001-resource-filtering`
+- Fixes: `fix/017-pagination-edge-case`
+- Hotfixes: `hotfix/critical-prod-issue`
+
+### Per-Language Branches Under One Feature
+- Use one umbrella feature branch for cross-language coordination:
+  - `feat/001-resource-filtering`
+- Use language-specific branches when implementation work is parallelized:
+  - `feat/001-resource-filtering-go`
+  - `feat/001-resource-filtering-py`
+  - `feat/001-resource-filtering-node`
+- Merge language-specific branches into the umbrella feature branch first, then
+  open a single PR from the umbrella feature branch to `develop/v1`.
 
 ## Release Procedure (R1)
 1. Freeze `develop/v1` for feature merges.
