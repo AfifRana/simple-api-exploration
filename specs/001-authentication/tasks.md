@@ -102,7 +102,7 @@
 
 ### Implementation for User Story 2
 
-- [ ] T038 [P] [US2] Add the versioned bundled breached-credential hash set and lookup implementation in implementations/001-authentication/go-chi/internal/credential/breached_passwords.txt and implementations/001-authentication/go-chi/internal/credential/breached.go
+- [ ] T038 [P] [US2] Implement the Pwned Passwords k-anonymity breached-credential check with local caching and fail-open network handling in implementations/001-authentication/go-chi/internal/credential/breached.go
 - [ ] T039 [US2] Implement credential policy evaluation and stable field-level violation codes in implementations/001-authentication/go-chi/internal/credential/policy.go
 - [ ] T040 [US2] Implement row-locked credential replacement, five-entry history maintenance, and all-session revocation queries in implementations/001-authentication/go-chi/internal/storage/postgres/credential_repository.go
 - [ ] T041 [US2] Implement atomic current-password proof, policy checks, Argon2id replacement, history update, session revocation, and audit writing in implementations/001-authentication/go-chi/internal/credential/service.go
@@ -251,7 +251,7 @@ Once US1 passes, one owner can execute T034-T042 for US2 while another executes 
 
 ### Task Completeness Validation
 
-- All 12 OpenAPI operations map to contract-test and implementation tasks.
+- All 11 OpenAPI operations map to contract-test and implementation tasks.
 - All 18 functional requirements map to foundation or story tasks.
 - Every user story has explicit independent test criteria and test-first tasks.
 - Data entities and relationships from data-model.md map to migrations, repositories, services, and integration tests.

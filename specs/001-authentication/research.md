@@ -359,9 +359,12 @@ every implementation variant, satisfying the scenario-parity control.
 
 ## Follow-Ups Carried Into Design
 
-1. Confirm the Go patch version available in the container registry (D-001).
-2. Decide the breached-credential source for FR-005's compromised-credential check —
-   a bundled k-anonymity list or an external service. An external call would add a
-   network dependency inside the login path and put SC-007 at risk, so a local list
-   is the presumed choice pending confirmation.
-3. Tune Argon2id parameters against the benchmark before locking them (D-003).
+All resolved 2026-09-01 with verified evidence:
+
+1. Go patch version confirmed: `golang:1.25.14` is the newest 1.25.x registry tag.
+2. Breached-credential source confirmed: Pwned Passwords k-anonymity API (verified
+   working from the pinned container; only the 5-char SHA-1 prefix is transmitted).
+   Local cache plus fail-open policy — network failure must not block login.
+3. Argon2id parameters benchmarked in `golang:1.25.14`: 64MiB/1iter/4par averages
+   39.0ms (worst 81.9ms), ~8% of the 500ms p95 budget. Planned parameters locked.
+   The OWASP 19MiB floor benchmarked slower (43.9ms avg) on this hardware.

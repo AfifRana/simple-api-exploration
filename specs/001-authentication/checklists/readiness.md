@@ -28,13 +28,13 @@
 
 ## Requirement Consistency
 
-- [ ] CHK015 Is the Go version stated consistently and pinned to an available patch version across the plan, module, container, and setup requirements? [Assumption, Plan §Open Items 1, Research §D-001]
-- [ ] CHK016 Is the breached-credential source resolved consistently between FR-005, the presumed bundled list, and task T038, including update and versioning expectations? [Conflict, Spec §FR-005, Plan §Open Items 2, Tasks §T038]
-- [ ] CHK017 Are Argon2id parameters presented as provisional everywhere until benchmark tuning is complete, and is the authority for locking them identified? [Consistency, Research §D-003, Plan §Open Items 3]
+- [x] CHK015 Is the Go version stated consistently and pinned to an available patch version across the plan, module, container, and setup requirements? [Assumption, Plan §Open Items 1, Research §D-001] — Resolved 2026-09-01: `golang:1.25.14` confirmed in registry; pin in `go.mod` and Dockerfile.
+- [x] CHK016 Is the breached-credential source resolved consistently between FR-005, the presumed bundled list, and task T038, including update and versioning expectations? [Conflict, Spec §FR-005, Plan §Open Items 2, Tasks §T038] — Resolved 2026-09-01: Pwned Passwords k-anonymity API with local cache, fail-open on network failure. T038 must be updated to match.
+- [x] CHK017 Are Argon2id parameters presented as provisional everywhere until benchmark tuning is complete, and is the authority for locking them identified? [Consistency, Research §D-003, Plan §Open Items 3] — Resolved 2026-09-01: benchmarked at 39.0ms avg / 81.9ms worst (~8% of p95 budget); planned 64MiB/1iter/4par locked.
 - [ ] CHK018 Does the statement that the service is "stateless" align with the documented server-side sessions, throttling counters, audit events, and PostgreSQL dependency? [Ambiguity, Plan §Summary, Research §D-004–D-006]
 - [ ] CHK019 Are account deletion requirements consistent about identifier reuse, credential-history scrubbing, audit retention, and the terminal nature of deletion? [Consistency, Spec §FR-011, Research §D-008, Data Model §UserAccount]
 - [ ] CHK020 Are session lifetime and revocation rules consistent across the research decision, data model, OpenAPI descriptions, and quickstart scenarios? [Consistency, Research §D-004, Data Model §Session, Contract §Authentication]
-- [ ] CHK021 Is the count of "12 endpoints" reconciled with the 11 HTTP operations across 8 paths currently defined in the OpenAPI contract? [Conflict, Plan §Scale/Scope, Tasks §Task Completeness Validation, Contract §Paths]
+- [x] CHK021 Is the count of "12 endpoints" reconciled with the 11 HTTP operations across 8 paths currently defined in the OpenAPI contract? [Conflict, Plan §Scale/Scope, Tasks §Task Completeness Validation, Contract §Paths] — Resolved 2026-09-01: plan and tasks corrected to 11; contract is authoritative.
 
 ## Acceptance Criteria Quality
 

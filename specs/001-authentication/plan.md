@@ -54,7 +54,7 @@ Argon2id parameters
 (FR-002, D-007); audit events written transactionally so SC-006 holds under partial
 failure
 
-**Scale/Scope**: 12 endpoints across 3 groups; 6 tables; research-scale workload
+**Scale/Scope**: 11 endpoints across 3 groups; 6 tables; research-scale workload
 (hundreds of accounts, tens of concurrent sessions) sized for cross-language
 comparison rather than production volume
 
@@ -207,13 +207,17 @@ record for such choices.
 
 ## Open Items Carried Forward
 
-These do not block task generation but must be resolved during implementation:
+All three open items were resolved on 2026-09-01 with verified evidence:
 
-1. **Go patch version** — confirm availability in the container registry and pin in
-   both `go.mod` and the Dockerfile (D-001).
-2. **Breached-credential source** — FR-005 requires rejecting compromised credentials.
-   A bundled k-anonymity list is the presumed choice; an external lookup inside the
-   login path would add a network dependency that puts SC-007 at risk (research.md
-   follow-up 2).
-3. **Argon2id parameters** — tune against the benchmark before locking, following the
-   documented order of adjustment (D-003).
+1. **Go patch version — RESOLVED**: `golang:1.25.14` confirmed available in the
+   container registry (newest 1.25.x tag). Pin in both `go.mod` and the Dockerfile.
+2. **Breached-credential source — RESOLVED**: Pwned Passwords k-anonymity API,
+   verified working from the pinned container. Only the 5-character SHA-1 prefix
+   is transmitted. Local cache plus fail-open policy: a network failure must not
+   block login, since an external call inside the login path would put SC-007 at
+   risk (research.md follow-up 2).
+3. **Argon2id parameters — RESOLVED**: benchmarked in `golang:1.25.14` on the
+   development host: 64MiB/1iter/4par averages 39.0ms, worst observed 81.9ms —
+   roughly 8% of the 500ms p95 budget. Lock the planned parameters. Notably, the
+   OWASP 19MiB floor benchmarked *slower* (43.9ms avg) on this hardware, so there
+   is no performance reason to weaken.
