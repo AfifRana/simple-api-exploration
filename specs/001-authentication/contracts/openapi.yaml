@@ -1,0 +1,710 @@
+openapi: "3.1.0"
+
+info:
+  title: Authentication API
+  version: "1.0.0"
+  license:
+    name: MIT
+    identifier: MIT
+  description: |
+    Authentication, credential management, and admin account-maintenance APIs.
+    All error responses use RFC 9457 Problem Details (application/problem+json).
+
+servers:
+  - url: http://localhost:8080
+    description: Local development
+
+tags:
+  - name: auth
+    description: Authentication and session management
+  - name: credentials
+    description: Credential self-service
+  - name: admin
+    description: Admin account maintenance
+
+# ─── Reusable components ────────────────────────────────────────────────────
+
+components:
+
+  securitySchemes:
+    sessionToken:
+      type: http
+      scheme: bearer
+      description: Opaque session token returned by POST /v1/auth/login
+
+  schemas:
+
+    # ── Enumerations ──────────────────────────────────────────────────────
+
+    Role:
+      type: string
+      enum: [user, admin]
+
+    AccountStatus:
+      type: string
+      enum: [active, blocked, inactive, deleted]
+
+    # ── Problem Details (RFC 9457) ────────────────────────────────────────
+
+    Problem:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type:
+          type: string
+          format: uri
+          example: "https://example.com/problems/invalid-credentials"
+        title:
+          type: string
+          example: "Authentication failed"
+        status:
+          type: integer
+          example: 401
+        code:
+          type: string
+          description: Stable machine-readable error code
+          example: "auth.invalid_credentials"
+        detail:
+          type: string
+          description: Human-readable explanation safe to surface to the requester
+        instance:
+          type: string
+          format: uri
+        errors:
+          type: array
+          description: Field-level validation failures (422 only)
+          items:
+            $ref: "#/components/schemas/FieldError"
+
+    FieldError:
+      type: object
+      required: [field, code, message]
+      properties:
+        field:
+          type: string
+          example: "password"
+        code:
+          type: string
+          example: "credential.too_short"
+        message:
+          type: string
+          example: "Password must be at least 12 characters"
+
+    # ── Auth ──────────────────────────────────────────────────────────────
+
+    LoginRequest:
+      type: object
+      required: [login_identifier, password]
+      properties:
+        login_identifier:
+          type: string
+          format: email
+          maxLength: 254
+          example: "user@example.com"
+        password:
+          type: string
+          format: password
+          minLength: 1
+          maxLength: 1024
+
+    LoginResponse:
+      type: object
+      required: [token, expires_at, account_id, role]
+      properties:
+        token:
+          type: string
+          description: Opaque bearer token; treat as a secret
+        expires_at:
+          type: string
+          format: date-time
+        account_id:
+          type: string
+          format: uuid
+        role:
+          $ref: "#/components/schemas/Role"
+
+    # ── Credentials ───────────────────────────────────────────────────────
+
+    ChangePasswordRequest:
+      type: object
+      required: [current_password, new_password]
+      properties:
+        current_password:
+          type: string
+          format: password
+          minLength: 1
+          maxLength: 1024
+        new_password:
+          type: string
+          format: password
+          minLength: 12
+          maxLength: 256
+
+    # ── User Account ──────────────────────────────────────────────────────
+
+    UserAccountSummary:
+      type: object
+      required: [id, login_identifier, display_name, role, status, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        login_identifier:
+          type: string
+          format: email
+        display_name:
+          type: string
+        role:
+          $ref: "#/components/schemas/Role"
+        status:
+          $ref: "#/components/schemas/AccountStatus"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateUserRequest:
+      type: object
+      required: [login_identifier, display_name, password, role]
+      properties:
+        login_identifier:
+          type: string
+          format: email
+          maxLength: 254
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        password:
+          type: string
+          format: password
+          minLength: 12
+          maxLength: 256
+        role:
+          $ref: "#/components/schemas/Role"
+
+    UpdateUserRequest:
+      type: object
+      minProperties: 1
+      properties:
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+
+    ChangeRoleRequest:
+      type: object
+      required: [role]
+      properties:
+        role:
+          $ref: "#/components/schemas/Role"
+
+    UserListResponse:
+      type: object
+      required: [items, total, limit, offset]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserAccountSummary"
+        total:
+          type: integer
+          minimum: 0
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+        offset:
+          type: integer
+          minimum: 0
+
+  # ── Common response headers ──────────────────────────────────────────────
+
+  headers:
+    RetryAfter:
+      description: Seconds until the rate-limit window resets
+      schema:
+        type: integer
+        minimum: 0
+    RequestId:
+      description: Correlation ID echoed from the request or generated by the server
+      schema:
+        type: string
+
+  # ── Reusable responses ───────────────────────────────────────────────────
+
+  responses:
+
+    Unauthorized:
+      description: Missing or invalid session token
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+          example:
+            type: "https://example.com/problems/unauthorized"
+            title: "Unauthorized"
+            status: 401
+            code: "auth.unauthorized"
+
+    Forbidden:
+      description: Authenticated but insufficient role
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+          example:
+            type: "https://example.com/problems/forbidden"
+            title: "Forbidden"
+            status: 403
+            code: "authz.forbidden"
+
+    NotFound:
+      description: Resource not found
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+
+    UnprocessableEntity:
+      description: Request body failed validation
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+
+    TooManyRequests:
+      description: Abuse-protection threshold exceeded
+      headers:
+        Retry-After:
+          $ref: "#/components/headers/RetryAfter"
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+          example:
+            type: "https://example.com/problems/too-many-requests"
+            title: "Too Many Requests"
+            status: 429
+            code: "auth.rate_limited"
+
+    Conflict:
+      description: Conflict with current resource state
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+
+# ─── Paths ───────────────────────────────────────────────────────────────────
+
+paths:
+
+  # ── Auth ──────────────────────────────────────────────────────────────────
+
+  /v1/auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Authenticate and obtain a session token
+      security: []   # public endpoint: callers are unauthenticated by definition
+      description: |
+        Authenticates with login_identifier and password.
+        Returns a uniform 401 for all denial reasons (invalid credentials,
+        blocked, deleted, inactive) to prevent account enumeration (FR-002, D-007).
+        Abuse protection applies to both the identifier and the client IP (FR-016).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Authentication successful
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          description: Authentication denied (uniform response for all denial reasons)
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              example:
+                type: "https://example.com/problems/invalid-credentials"
+                title: "Authentication failed"
+                status: 401
+                code: "auth.invalid_credentials"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /v1/auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Revoke the current session
+      security:
+        - sessionToken: []
+      responses:
+        "204":
+          description: Session revoked
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ── Credentials ───────────────────────────────────────────────────────────
+
+  /v1/me/password:
+    put:
+      operationId: changePassword
+      tags: [credentials]
+      summary: Change the authenticated user's password
+      description: |
+        Requires proof of the current password (FR-004).
+        Revokes all sessions for the account on success, including the caller's (FR-006).
+        Abuse protection applies (FR-016).
+      security:
+        - sessionToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+      responses:
+        "204":
+          description: Password changed; all sessions revoked
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  # ── Admin: user list and create ───────────────────────────────────────────
+
+  /v1/admin/users:
+    get:
+      operationId: listUsers
+      tags: [admin]
+      summary: List user accounts
+      description: Returns a paginated, bounded list of accounts (FR-008). Requires admin role.
+      security:
+        - sessionToken: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/AccountStatus"
+        - name: role
+          in: query
+          schema:
+            $ref: "#/components/schemas/Role"
+        - name: q
+          in: query
+          description: Partial match on display_name or login_identifier
+          schema:
+            type: string
+            maxLength: 100
+      responses:
+        "200":
+          description: Account list
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+    post:
+      operationId: createUser
+      tags: [admin]
+      summary: Create a user account
+      description: Creates an account in active state with must_change=true (FR-007).
+      security:
+        - sessionToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserRequest"
+      responses:
+        "201":
+          description: Account created
+          headers:
+            Location:
+              description: URL of the new account
+              schema:
+                type: string
+                format: uri
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserAccountSummary"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  # ── Admin: single account ─────────────────────────────────────────────────
+
+  /v1/admin/users/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+
+    get:
+      operationId: getUser
+      tags: [admin]
+      summary: Get a user account
+      security:
+        - sessionToken: []
+      responses:
+        "200":
+          description: Account detail
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserAccountSummary"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      operationId: updateUser
+      tags: [admin]
+      summary: Edit permitted account attributes
+      description: |
+        Updates non-sensitive attributes (FR-009). Raw credential material is
+        never accepted or returned. Role changes use the dedicated role endpoint.
+      security:
+        - sessionToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRequest"
+      responses:
+        "200":
+          description: Account updated
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserAccountSummary"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+    delete:
+      operationId: deleteUser
+      tags: [admin]
+      summary: Soft-delete a user account
+      description: |
+        Prevents future authentication and revokes all sessions while preserving
+        audit evidence (FR-011, D-008). Rejects deletion of the last active admin (FR-013).
+      security:
+        - sessionToken: []
+      responses:
+        "204":
+          description: Account deleted
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  # ── Admin: block / unblock ────────────────────────────────────────────────
+
+  /v1/admin/users/{id}/block:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      operationId: blockUser
+      tags: [admin]
+      summary: Block a user account
+      description: |
+        Sets status to blocked and revokes all sessions immediately (FR-010).
+        Rejects blocking the last active admin (FR-013).
+      security:
+        - sessionToken: []
+      responses:
+        "204":
+          description: Account blocked
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/admin/users/{id}/unblock:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      operationId: unblockUser
+      tags: [admin]
+      summary: Unblock a user account
+      security:
+        - sessionToken: []
+      responses:
+        "204":
+          description: Account unblocked
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  # ── Admin: role change ────────────────────────────────────────────────────
+
+  /v1/admin/users/{id}/role:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      operationId: changeUserRole
+      tags: [admin]
+      summary: Change a user's role
+      description: |
+        Dedicated endpoint for role changes to make privilege escalation explicit
+        and auditable (FR-013, D-010). Rejects changes that would leave no active admin.
+      security:
+        - sessionToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangeRoleRequest"
+      responses:
+        "200":
+          description: Role updated
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserAccountSummary"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
