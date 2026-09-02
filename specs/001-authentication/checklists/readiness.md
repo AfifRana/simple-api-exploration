@@ -10,9 +10,9 @@
 
 - [ ] CHK001 Are requirements defined for every operation in the OpenAPI contract, including login, logout, password change, account listing, creation, detail, editing, deletion, blocking, unblocking, and role changes? [Completeness, Spec §FR-001–FR-013]
 - [ ] CHK002 Does the specification define the expected account status immediately after admin creation, rather than leaving "usable state" open to interpretation? [Ambiguity, Spec §US3 Scenario 1, Spec §FR-007]
-- [ ] CHK003 Are requirements documented for explicit logout even though logout is present in the contract but not named in the functional requirements or user scenarios? [Gap, Contract §POST /v1/auth/logout]
-- [ ] CHK004 Are requirements documented for changing an account role through the dedicated role operation, including permitted source and target roles? [Gap, Spec §FR-013, Contract §PUT /v1/admin/users/{id}/role]
-- [ ] CHK005 Are requirements defined for account reactivation from `inactive` status, or is that transition explicitly excluded from this feature? [Gap, Data Model §UserAccount Status transitions]
+- [x] CHK003 Are requirements documented for explicit logout even though logout is present in the contract but not named in the functional requirements or user scenarios? [Gap, Contract §POST /v1/auth/logout] — Resolved 2026-09-01: FR-019 added.
+- [x] CHK004 Are requirements documented for changing an account role through the dedicated role operation, including permitted source and target roles? [Gap, Spec §FR-013, Contract §PUT /v1/admin/users/{id}/role] — Resolved 2026-09-01: FR-020 added; permitted roles are user and admin.
+- [x] CHK005 Are requirements defined for account reactivation from `inactive` status, or is that transition explicitly excluded from this feature? [Gap, Data Model §UserAccount Status transitions] — Resolved 2026-09-01: `inactive` removed from the enum and documented as reserved for a future lifecycle feature; unreachable in this version.
 - [ ] CHK006 Are credential-history retention and reuse requirements explicitly specified, including whether the current credential plus five prior credentials are prohibited? [Completeness, Spec §FR-005, Data Model §CredentialHistory]
 - [ ] CHK007 Are requirements for bootstrap-admin creation, mandatory initial credential change, and bootstrap-secret lifecycle documented in the feature scope? [Gap, Data Model §Bootstrap, Tasks §T018]
 
@@ -38,10 +38,10 @@
 
 ## Acceptance Criteria Quality
 
-- [ ] CHK022 Is SC-001's 95% first-attempt authentication target reconciled with the deterministic expectation that valid active credentials succeed, including which failures may comprise the remaining 5%? [Ambiguity, Spec §SC-001, Spec §FR-001]
+- [x] CHK022 Is SC-001's 95% first-attempt authentication target reconciled with the deterministic expectation that valid active credentials succeed, including which failures may comprise the remaining 5%? [Ambiguity, Spec §SC-001, Spec §FR-001] — Resolved 2026-09-01: SC-001 restated as 100% of valid-credential attempts succeed.
 - [ ] CHK023 Are the expected load profile, concurrency, dataset size, warm-up, duration, and execution environment defined for the 500ms p95 budget? [Measurability, Spec §SC-007, Research §D-013]
 - [ ] CHK024 Are separate latency criteria defined for Argon2id-bound authentication and non-hashing account-management operations, or is one shared 500ms threshold intentionally required? [Clarity, Spec §SC-007, Research §D-003]
-- [ ] CHK025 Are completion-time criteria SC-003 and SC-004 defined for an API-only feature in terms of measurable request sequences rather than human workflow duration? [Measurability, Spec §SC-003–SC-004]
+- [x] CHK025 Are completion-time criteria SC-003 and SC-004 defined for an API-only feature in terms of measurable request sequences rather than human workflow duration? [Measurability, Spec §SC-003–SC-004] — Resolved 2026-09-01: restated as bounded API-call sequences.
 - [ ] CHK026 Does each security-sensitive action have an explicit required audit action name, actor rule, subject rule, outcome rule, and mandatory field set? [Acceptance Criteria, Spec §FR-015, Spec §SC-006, Data Model §AuditEvent]
 - [ ] CHK027 Are objective acceptance criteria defined for detecting credential, token, and sensitive-account-data exposure across responses, logs, audit records, and views? [Measurability, Spec §FR-017]
 - [ ] CHK028 Is the acceptable performance regression threshold quantified rather than referring only to an "approved regression threshold"? [Ambiguity, Spec §SC-012]
@@ -49,7 +49,7 @@
 ## Scenario Coverage
 
 - [ ] CHK029 Are primary, alternate, and exception requirements complete for login, including malformed input, expired sessions, unknown accounts, blocked accounts, and active accounts with invalid credentials? [Coverage, Spec §US1, Spec §Edge Cases]
-- [ ] CHK030 Are recovery requirements defined after a temporary lockout expires, after a blocked account is unblocked, and after an inactive account becomes active? [Recovery Flow, Gap]
+- [ ] CHK030 Are recovery requirements defined after a temporary lockout expires and after a blocked account is unblocked? [Recovery Flow, Gap] — `inactive` portion resolved 2026-09-01: status removed from scope.
 - [ ] CHK031 Are requirements defined for logout with an expired, already revoked, malformed, or missing token, including whether the operation is idempotent? [Exception Flow, Gap, Contract §POST /v1/auth/logout]
 - [ ] CHK032 Are password-change requirements complete for concurrent requests, policy rejection, current-password rejection, session revocation, and audit failure outcomes? [Coverage, Spec §US2, Spec §Edge Cases]
 - [ ] CHK033 Are admin-operation requirements complete for duplicate create, repeated block/unblock, repeated delete, edits to deleted accounts, and self-directed administration? [Coverage, Gap, Spec §US3]

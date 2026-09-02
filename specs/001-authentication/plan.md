@@ -7,7 +7,9 @@
 ## Summary
 
 Deliver authentication, credential self-service, and admin account maintenance as a
-stateless Go REST API backed by PostgreSQL. Users authenticate with credentials and
+Go REST API backed by PostgreSQL, holding no local process state — all durable state
+(sessions, throttle counters, audit events) lives in the database. Users authenticate
+with credentials and
 change their own password; admins create, view, edit, block, unblock, delete, and
 re-role accounts. Every security-sensitive action writes an audit event in the same
 transaction as the action itself.
@@ -43,7 +45,7 @@ real PostgreSQL (integration), `kin-openapi` against the live service (contract)
 
 **Target Platform**: Linux container; distroless static runtime image
 
-**Project Type**: Stateless REST API service (backend only; no frontend in scope)
+**Project Type**: REST API service, no local process state (backend only; no frontend in scope)
 
 **Performance Goals**: p95 < 500ms for authentication and account-management
 endpoints under feature-level benchmark load (SC-007), measured with production

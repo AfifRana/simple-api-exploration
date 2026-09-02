@@ -57,14 +57,14 @@
 
 ## Phase 3: User Story 1 - User Authenticates Account (Priority: P1) MVP
 
-**Goal**: An active registered user can log in and receive an opaque session token; invalid, blocked, inactive, deleted, and unknown accounts are denied uniformly; repeated failures trigger abuse protection; logout revokes the session.
+**Goal**: An active registered user can log in and receive an opaque session token; invalid, blocked, deleted, and unknown accounts are denied uniformly; repeated failures trigger abuse protection; logout revokes the session.
 
-**Independent Test**: Seed active, blocked, inactive, and deleted accounts; verify only valid credentials for the active account return a token, every denial has the same safe 401 contract, the sixth failure in the configured window returns 429, and logout makes the issued token unusable.
+**Independent Test**: Seed active, blocked, and deleted accounts; verify only valid credentials for the active account return a token, every denial has the same safe 401 contract, the sixth failure in the configured window returns 429, and logout makes the issued token unusable.
 
 ### Tests for User Story 1
 
 - [ ] T020 [P] [US1] Add OpenAPI-backed contract tests for POST /v1/auth/login and POST /v1/auth/logout responses in implementations/001-authentication/go-chi/tests/contract/auth_test.go
-- [ ] T021 [P] [US1] Add integration tests for valid login, invalid credentials, blocked, inactive, deleted, and unknown accounts in implementations/001-authentication/go-chi/tests/integration/login_test.go
+- [ ] T021 [P] [US1] Add integration tests for valid login, invalid credentials, blocked, deleted, and unknown accounts in implementations/001-authentication/go-chi/tests/integration/login_test.go
 - [ ] T022 [P] [US1] Add integration tests comparing unknown-account and invalid-password response bodies and timing distributions in implementations/001-authentication/go-chi/tests/integration/enumeration_test.go
 - [ ] T023 [P] [US1] Add integration tests for opaque token storage, expiry, logout revocation, and account-status rechecks in implementations/001-authentication/go-chi/tests/integration/session_test.go
 - [ ] T024 [P] [US1] Add integration tests for identifier and IP failure counters, the five-attempt threshold, 15-minute lockout, Retry-After, and audit events in implementations/001-authentication/go-chi/tests/integration/throttle_test.go

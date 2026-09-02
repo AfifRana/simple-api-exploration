@@ -12,7 +12,7 @@
 
 ### User Story 1 - User Authenticates Account (Priority: P1)
 
-A registered user can authenticate with valid credentials and receive access to protected account capabilities while invalid, blocked, deleted, or inactive accounts are rejected with consistent and safe error responses.
+A registered user can authenticate with valid credentials and receive access to protected account capabilities while invalid, blocked, or deleted accounts are rejected with consistent and safe error responses.
 
 **Why this priority**: Authentication is the foundation for all protected user and admin capabilities and is the minimum viable value for the feature.
 
@@ -21,7 +21,7 @@ A registered user can authenticate with valid credentials and receive access to 
 **Acceptance Scenarios**:
 
 1. **Given** an active registered user with valid credentials, **When** the user authenticates, **Then** the system confirms authentication and grants access appropriate to the user's role.
-2. **Given** an account that is blocked, deleted, inactive, or has invalid credentials, **When** authentication is attempted, **Then** the system denies access with a consistent response that does not reveal sensitive account state beyond what is safe for the requester.
+2. **Given** an account that is blocked, deleted, or has invalid credentials, **When** authentication is attempted, **Then** the system denies access with a consistent response that does not reveal sensitive account state beyond what is safe for the requester.
 3. **Given** repeated failed authentication attempts for the same account or source, **When** attempts exceed the configured abuse threshold, **Then** the system temporarily slows or blocks further attempts and records a security event.
 
 ---
@@ -63,7 +63,7 @@ An authorized admin can create, view, edit, delete, block, and unblock user acco
 ### Edge Cases
 
 - Authentication requests with missing, malformed, expired, or replayed credentials are rejected consistently.
-- Blocked, deleted, inactive, and unknown accounts do not expose sensitive account enumeration signals in public responses.
+- Blocked, deleted, and unknown accounts do not expose sensitive account enumeration signals in public responses.
 - Concurrent credential changes for the same account result in one clear final state and no partial credential update.
 - Admin attempts to remove or block the last active admin are rejected unless an approved recovery path exists.
 - Admin attempts to escalate a user's privileges require explicit authorization and audit evidence.
@@ -76,7 +76,7 @@ An authorized admin can create, view, edit, delete, block, and unblock user acco
 ### Functional Requirements
 
 - **FR-001**: System MUST allow active registered users to authenticate with valid credentials.
-- **FR-002**: System MUST deny authentication for invalid credentials, blocked accounts, deleted accounts, inactive accounts, and accounts without permission to access the requested capability.
+- **FR-002**: System MUST deny authentication for invalid credentials, blocked accounts, deleted accounts, and accounts without permission to access the requested capability.
 - **FR-003**: System MUST enforce role-based authorization that distinguishes regular user capabilities from admin account-maintenance capabilities.
 - **FR-004**: Users MUST be able to change their own credentials only after successful authentication and proof of their current credential.
 - **FR-005**: System MUST validate new credentials against a documented credential policy before accepting them.
@@ -89,10 +89,12 @@ An authorized admin can create, view, edit, delete, block, and unblock user acco
 - **FR-012**: System MUST prevent non-admin users from performing admin account-maintenance actions.
 - **FR-013**: System MUST prevent unsafe administrative changes, including deleting or blocking the last active admin and unauthorized privilege escalation.
 - **FR-014**: System MUST use consistent request validation and error response semantics across authentication, credential, and admin account APIs.
-- **FR-015**: System MUST record security audit events for authentication success, authentication failure, credential change, account creation, account edit, account deletion, account block, account unblock, and authorization denial.
+- **FR-015**: System MUST record security audit events for authentication success, authentication failure, logout, credential change, account creation, account edit, account deletion, account block, account unblock, account role change, and authorization denial.
 - **FR-016**: System MUST apply abuse protections to authentication and credential-sensitive operations, including throttling or temporary lockout for repeated failures.
 - **FR-017**: System MUST ensure sensitive credential material is never exposed in responses, logs, audit records, or account views.
 - **FR-018**: System MUST provide clear recovery outcomes for rejected user and admin actions without disclosing unnecessary sensitive details.
+- **FR-019**: Users MUST be able to revoke their own active session through an explicit logout operation.
+- **FR-020**: Admins MUST be able to change a user's role through a dedicated, explicitly authorized operation that enforces the last-active-admin guard and records an audit event.
 
 ### Quality And Verification Requirements *(mandatory)*
 
@@ -109,7 +111,7 @@ An authorized admin can create, view, edit, delete, block, and unblock user acco
 - **User Account**: Represents an individual account that can authenticate and access protected capabilities; key attributes include stable identifier, login identifier, display name, role, status, creation details, and update details.
 - **Credential**: Represents secret authentication proof associated with a user account; key attributes include credential type, validity state, last changed time, and policy compliance status without exposing raw secret material.
 - **Role**: Represents the permission level assigned to an account, such as user or admin, and determines which protected actions the account can perform.
-- **Account Status**: Represents whether an account is active, blocked, deleted, or inactive, and directly controls authentication and access outcomes.
+- **Account Status**: Represents whether an account is active, blocked, or deleted, and directly controls authentication and access outcomes.
 - **Audit Event**: Represents a security-relevant action or decision, including actor, affected account, action type, outcome, timestamp, and non-sensitive context.
 - **Authentication Session**: Represents authenticated access granted after successful login; key attributes include owning account, role context, validity state, creation time, and expiration or revocation state.
 
@@ -117,10 +119,10 @@ An authorized admin can create, view, edit, delete, block, and unblock user acco
 
 ### Measurable Outcomes
 
-- **SC-001**: At least 95% of active users with valid credentials can authenticate successfully on the first attempt during acceptance testing.
-- **SC-002**: 100% of blocked, deleted, inactive, and invalid-credential authentication attempts are denied during conformance testing.
-- **SC-003**: Users can complete a successful credential change in under 2 minutes, including validation feedback for rejected changes.
-- **SC-004**: Admins can complete common account maintenance actions, including create, edit, block, unblock, and delete, in under 3 minutes per account during workflow testing.
+- **SC-001**: 100% of authentication attempts with valid credentials for active accounts succeed during acceptance testing.
+- **SC-002**: 100% of blocked, deleted, and invalid-credential authentication attempts are denied during conformance testing.
+- **SC-003**: A successful credential change completes in a bounded sequence of at most 3 sequential API calls from an authenticated state, and rejected changes return actionable validation feedback in a single response.
+- **SC-004**: Each admin account maintenance action — create, edit, block, unblock, and delete — completes in a single API call per action with an immediate, definitive outcome response.
 - **SC-005**: 100% of admin-only account maintenance attempts by non-admin users are denied during authorization testing.
 - **SC-006**: 100% of security-sensitive actions defined in the requirements produce an audit event with actor, action, outcome, and timestamp.
 - **SC-007**: Authentication and account-management responses meet a documented performance budget of p95 completion within 500 milliseconds under expected feature-level test load.

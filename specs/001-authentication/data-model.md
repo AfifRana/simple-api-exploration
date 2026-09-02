@@ -34,7 +34,7 @@ entities in the spec.
 | `deleted_login_identifier` | `citext` | NULL unless deleted | Receives the identifier on soft delete (D-008) |
 | `display_name` | `text` | NOT NULL, 1–100 chars | |
 | `role` | `role_enum` | NOT NULL, default `user` | `user` \| `admin` (FR-003) |
-| `status` | `status_enum` | NOT NULL, default `active` | `active` \| `blocked` \| `inactive` \| `deleted` |
+| `status` | `status_enum` | NOT NULL, default `active` | `active` \| `blocked` \| `deleted` (`inactive` reserved for a future lifecycle feature; not reachable in this version) |
 | `created_at` | `timestamptz` | NOT NULL | |
 | `created_by` | `uuid` | FK → `user_accounts.id`, NULL | NULL for seeded bootstrap admin |
 | `updated_at` | `timestamptz` | NOT NULL | |
@@ -65,16 +65,14 @@ stateDiagram-v2
     [*] --> active : admin creates
     active --> blocked : admin blocks
     blocked --> active : admin unblocks
-    active --> inactive : policy/admin
-    inactive --> active : admin reactivates
     active --> deleted : admin deletes
     blocked --> deleted : admin deletes
-    inactive --> deleted : admin deletes
     deleted --> [*] : terminal
 ```
 
 Only `active` permits authentication (FR-001, FR-002). `deleted` is terminal —
-no restore path in this feature.
+no restore path in this feature. `inactive` is reserved for a future
+account-lifecycle feature and is intentionally unreachable in this version.
 
 ---
 

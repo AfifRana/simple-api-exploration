@@ -42,7 +42,10 @@ components:
 
     AccountStatus:
       type: string
-      enum: [active, blocked, inactive, deleted]
+      enum: [active, blocked, deleted]
+      description: >
+        Current account status. `inactive` is reserved for a future account-lifecycle
+        feature and is not a reachable state in this version.
 
     # ── Problem Details (RFC 9457) ────────────────────────────────────────
 
@@ -122,6 +125,13 @@ components:
           format: uuid
         role:
           $ref: "#/components/schemas/Role"
+        must_change:
+          type: boolean
+          description: >
+            True when the account's credential was admin-assigned or bootstrap-seeded
+            and has not been rotated by the user yet. Clients SHOULD prompt for a
+            credential change. Enforcement (restricting access until rotation) is
+            deferred to a future feature; the flag is advisory in this version.
 
     # ── Credentials ───────────────────────────────────────────────────────
 
@@ -329,7 +339,7 @@ paths:
       description: |
         Authenticates with login_identifier and password.
         Returns a uniform 401 for all denial reasons (invalid credentials,
-        blocked, deleted, inactive) to prevent account enumeration (FR-002, D-007).
+        blocked, deleted) to prevent account enumeration (FR-002, D-007).
         Abuse protection applies to both the identifier and the client IP (FR-016).
       requestBody:
         required: true

@@ -182,7 +182,7 @@ into a denial-of-service vector against legitimate accounts.
 ## D-007: Account Enumeration Resistance
 
 **Decision**: Public authentication responses are uniform. Unknown identifier,
-invalid credential, blocked, inactive, and deleted accounts all return the same
+invalid credential, blocked, and deleted accounts all return the same
 `401` Problem Details body with a single generic code. When the identifier is
 unknown, verify the supplied credential against a fixed dummy Argon2id hash so the
 response time profile does not distinguish the cases. Specific reasons are recorded

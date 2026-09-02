@@ -193,6 +193,12 @@ curl -sS -o /dev/null -w '%{http_code}\n' -X POST "$API/v1/auth/login" \
 **Weak credentials are rejected (FR-005):**
 
 ```bash
+# re-authenticate with the new password (all sessions were revoked above)
+export NEW_USER_TOKEN=$(curl -sS -X POST "$API/v1/auth/login" \
+  -H 'Content-Type: application/json' \
+  -d '{"login_identifier":"alice@example.com","password":"a-much-longer-new-secret"}' \
+  | jq -r .token)
+
 curl -sS -X PUT "$API/v1/me/password" \
   -H "Authorization: Bearer $NEW_USER_TOKEN" -H 'Content-Type: application/json' \
   -d '{"current_password":"a-much-longer-new-secret","new_password":"short"}'
